@@ -1,0 +1,29 @@
+name: Bedwars
+version: 1.0.0
+main: com.bedwars.BedwarsPlugin
+api-version: 1.21.4
+description: A full-fledged Bedwars plugin for Minecraft
+author: MoltaExlips
+
+commands:
+  bedwars:
+    description: Main Bedwars command
+    usage: /bedwars [join|leave|stats|admin]
+    aliases: [bw]
+  
+  bedwarsadmin:
+    description: Admin commands for Bedwars
+    usage: /bedwarsadmin [create|delete|reload|setup]
+    aliases: [bwa]
+    permission: bedwars.admin
+
+permissions:
+  bedwars.admin:
+    description: Allows access to admin commands
+    default: op
+  bedwars.join:
+    description: Allows joining Bedwars games
+    default: true
+  bedwars.spectate:
+    description: Allows spectating Bedwars games
+    default: true 

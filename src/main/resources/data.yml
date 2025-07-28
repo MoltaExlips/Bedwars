@@ -1,0 +1,22 @@
+# Bedwars Data Storage
+# This file stores player statistics and game data
+
+# Player Statistics
+# Format: stats.<player-uuid>.<stat-type>: <value>
+stats:
+  # Example player stats (will be populated automatically)
+  # 12345678-1234-1234-1234-123456789abc:
+  #   wins: 5
+  #   losses: 3
+  #   beds-destroyed: 12
+  #   final-kills: 8
+
+# Game Data
+# Format: games.<game-id>.<data-type>: <value>
+games:
+  # Example game data (will be populated automatically)
+  # game-12345678:
+  #   map: lighthouse
+  #   state: FINISHED
+  #   start-time: 1234567890
+  #   end-time: 1234567899 

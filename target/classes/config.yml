@@ -1,0 +1,284 @@
+# Bedwars Configuration
+
+# Game Settings
+game:
+  min-players: 2
+  max-players: 8
+  countdown-seconds: 30
+  game-duration-minutes: 15
+  bed-destroy-time-seconds: 5
+  respawn-time-seconds: 3
+  generator-upgrade-interval-seconds: 30
+
+# Kits Configuration
+kits:
+  default:
+    name: "Default"
+    description: "Basic kit with starting items"
+    items:
+      - material: WOODEN_SWORD
+        amount: 1
+      - material: WOODEN_PICKAXE
+        amount: 1
+      - material: WOODEN_AXE
+        amount: 1
+      - material: WOOL
+        amount: 16
+      - material: STONE
+        amount: 16
+      - material: GOLDEN_APPLE
+        amount: 1
+  
+  warrior:
+    name: "Warrior"
+    description: "Combat focused kit"
+    items:
+      - material: STONE_SWORD
+        amount: 1
+      - material: WOODEN_PICKAXE
+        amount: 1
+      - material: WOODEN_AXE
+        amount: 1
+      - material: WOOL
+        amount: 16
+      - material: STONE
+        amount: 16
+      - material: GOLDEN_APPLE
+        amount: 2
+      - material: BREAD
+        amount: 8
+  
+  builder:
+    name: "Builder"
+    description: "Building focused kit"
+    items:
+      - material: WOODEN_SWORD
+        amount: 1
+      - material: STONE_PICKAXE
+        amount: 1
+      - material: STONE_AXE
+        amount: 1
+      - material: WOOL
+        amount: 32
+      - material: STONE
+        amount: 32
+      - material: OAK_PLANKS
+        amount: 16
+      - material: GOLDEN_APPLE
+        amount: 1
+
+# Generator Settings
+generators:
+  iron:
+    interval-seconds: 2
+    max-items: 8
+    material: IRON_INGOT
+  gold:
+    interval-seconds: 3
+    max-items: 4
+    material: GOLD_INGOT
+  diamond:
+    interval-seconds: 30
+    max-items: 2
+    material: DIAMOND
+  emerald:
+    interval-seconds: 60
+    max-items: 1
+    material: EMERALD
+
+# Shop Items
+shop:
+  blocks:
+    wool:
+      cost: 4
+      currency: IRON_INGOT
+      material: WOOL
+      amount: 16
+    stone:
+      cost: 12
+      currency: IRON_INGOT
+      material: STONE
+      amount: 16
+    end_stone:
+      cost: 24
+      currency: IRON_INGOT
+      material: END_STONE
+      amount: 16
+    obsidian:
+      cost: 4
+      currency: EMERALD
+      material: OBSIDIAN
+      amount: 4
+  
+  weapons:
+    wooden_sword:
+      cost: 10
+      currency: IRON_INGOT
+      material: WOODEN_SWORD
+      amount: 1
+    stone_sword:
+      cost: 7
+      currency: GOLD_INGOT
+      material: STONE_SWORD
+      amount: 1
+    iron_sword:
+      cost: 7
+      currency: GOLD_INGOT
+      material: IRON_SWORD
+      amount: 1
+    diamond_sword:
+      cost: 4
+      currency: EMERALD
+      material: DIAMOND_SWORD
+      amount: 1
+  
+  armor:
+    chainmail:
+      cost: 40
+      currency: IRON_INGOT
+      material: CHAINMAIL_CHESTPLATE
+      amount: 1
+    iron_armor:
+      cost: 12
+      currency: GOLD_INGOT
+      material: IRON_CHESTPLATE
+      amount: 1
+    diamond_armor:
+      cost: 6
+      currency: EMERALD
+      material: DIAMOND_CHESTPLATE
+      amount: 1
+  
+  tools:
+    wooden_pickaxe:
+      cost: 10
+      currency: IRON_INGOT
+      material: WOODEN_PICKAXE
+      amount: 1
+    stone_pickaxe:
+      cost: 7
+      currency: GOLD_INGOT
+      material: STONE_PICKAXE
+      amount: 1
+    iron_pickaxe:
+      cost: 7
+      currency: GOLD_INGOT
+      material: IRON_PICKAXE
+      amount: 1
+    diamond_pickaxe:
+      cost: 4
+      currency: EMERALD
+      material: DIAMOND_PICKAXE
+      amount: 1
+  
+  utilities:
+    tnt:
+      cost: 4
+      currency: GOLD_INGOT
+      material: TNT
+      amount: 1
+    fireball:
+      cost: 50
+      currency: IRON_INGOT
+      material: FIRE_CHARGE
+      amount: 1
+    ender_pearl:
+      cost: 4
+      currency: EMERALD
+      material: ENDER_PEARL
+      amount: 1
+    golden_apple:
+      cost: 3
+      currency: GOLD_INGOT
+      material: GOLDEN_APPLE
+      amount: 1
+
+# Maps Configuration
+maps:
+  lighthouse:
+    name: "Lighthouse"
+    description: "A classic 4-team map"
+    min-players: 4
+    max-players: 8
+    teams: 4
+    spawn-points:
+      red: "100,64,100"
+      blue: "-100,64,100"
+      green: "100,64,-100"
+      yellow: "-100,64,-100"
+    bed-locations:
+      red: "95,64,95"
+      blue: "-95,64,95"
+      green: "95,64,-95"
+      yellow: "-95,64,-95"
+    generators:
+      iron:
+        - "0,64,0"
+        - "50,64,50"
+        - "-50,64,50"
+        - "50,64,-50"
+        - "-50,64,-50"
+      gold:
+        - "0,64,0"
+      diamond:
+        - "25,64,25"
+        - "-25,64,25"
+        - "25,64,-25"
+        - "-25,64,-25"
+      emerald:
+        - "0,64,0"
+  
+  castle:
+    name: "Castle"
+    description: "A medieval themed map"
+    min-players: 6
+    max-players: 8
+    teams: 4
+    spawn-points:
+      red: "150,64,150"
+      blue: "-150,64,150"
+      green: "150,64,-150"
+      yellow: "-150,64,-150"
+    bed-locations:
+      red: "145,64,145"
+      blue: "-145,64,145"
+      green: "145,64,-145"
+      yellow: "-145,64,-145"
+    generators:
+      iron:
+        - "0,64,0"
+        - "75,64,75"
+        - "-75,64,75"
+        - "75,64,-75"
+        - "-75,64,-75"
+      gold:
+        - "0,64,0"
+      diamond:
+        - "37,64,37"
+        - "-37,64,37"
+        - "37,64,-37"
+        - "-37,64,-37"
+      emerald:
+        - "0,64,0"
+
+# Messages
+messages:
+  prefix: "&8[&cBedwars&8] "
+  game:
+    started: "&aGame started! Protect your bed and destroy others!"
+    ended: "&cGame ended! {winner} team wins!"
+    bed-destroyed: "&c{team} bed has been destroyed!"
+    player-eliminated: "&c{player} has been eliminated!"
+    respawn: "&aYou will respawn in {time} seconds!"
+  lobby:
+    joined: "&aYou joined the lobby!"
+    left: "&cYou left the lobby!"
+    full: "&cLobby is full!"
+    countdown: "&eGame starting in {time} seconds!"
+  shop:
+    purchased: "&aYou purchased {item} for {cost}!"
+    insufficient-funds: "&cInsufficient funds!"
+  admin:
+    map-created: "&aMap {map} created successfully!"
+    map-deleted: "&aMap {map} deleted successfully!"
+    config-reloaded: "&aConfiguration reloaded!" 

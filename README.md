@@ -1,48 +1,6 @@
 # Bedwars Plugin
 
-A full-fledged Bedwars plugin for Minecraft servers with complete game mechanics, GUI interfaces, custom maps, kits, and shop system.
-
-## Features
-
-### 🎮 Core Game Features
-- **Complete Bedwars Gameplay**: Protect your bed, destroy enemy beds, and eliminate opponents
-- **Multiple Game States**: Waiting, Countdown, Playing, Ending, Finished
-- **Team-based Combat**: 4-team system with red, blue, green, and yellow teams
-- **Bed Destruction Mechanics**: Strategic bed protection and destruction
-- **Respawn System**: Players respawn until their bed is destroyed
-
-### 🗺️ Map System
-- **Custom Maps**: Fully configurable maps with unique layouts
-- **Blank World Generation**: Each map gets its own clean world with no bedrock or structures
-- **Map Reset**: Automatic map restoration after each game
-- **Multiple Map Support**: Lighthouse and Castle maps included
-- **Spawn Point Management**: Team-specific spawn locations
-- **Bed Location Configuration**: Strategic bed placement
-
-### 🎒 Kit System
-- **Multiple Kits**: Default, Warrior, and Builder kits
-- **Customizable Items**: Configurable starting items for each kit
-- **Kit Selection GUI**: Easy kit selection through inventory interface
-- **Balanced Gameplay**: Different kits for different playstyles
-
-### 🛒 Shop System
-- **Currency System**: Iron, Gold, Diamond, and Emerald currencies
-- **Multiple Categories**: Blocks, Weapons, Armor, Tools, Utilities
-- **GUI Interface**: Easy-to-use shop interface
-- **Balanced Economy**: Strategic pricing for all items
-
-### ⚡ Resource Generators
-- **Iron Generators**: Basic resource generation
-- **Gold Generators**: Mid-tier resources
-- **Diamond Generators**: High-value resources
-- **Emerald Generators**: Premium resources
-- **Configurable Rates**: Adjustable generation intervals
-
-### 🎯 Game Management
-- **Lobby System**: Player queuing and game creation
-- **Auto-balancing**: Automatic team assignment
-- **Game Timer**: Configurable game duration
-- **Player Statistics**: Win/loss tracking and bed destruction stats
+A Bedwars plugin for Minecraft servers with complete game mechanics, GUI interfaces, custom maps, kits, and shop system.
 
 ## Installation
 
@@ -254,16 +212,4 @@ Each map creates its own world with:
 5. Submit a pull request
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support, please:
-1. Check the configuration examples
-2. Review the troubleshooting section
-3. Create an issue with detailed information about your problem
-
----
-
-**Enjoy playing Bedwars!** 🏰⚔️ 
+dont use

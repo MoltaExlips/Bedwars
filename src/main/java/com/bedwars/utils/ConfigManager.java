@@ -2,7 +2,6 @@ package com.bedwars.utils;
 
 import com.bedwars.BedwarsPlugin;
 import com.bedwars.game.GameState;
-import com.bedwars.game.Kit;
 import com.bedwars.game.Map;
 import com.bedwars.game.Team;
 import org.bukkit.Location;
@@ -78,39 +77,6 @@ public class ConfigManager {
     
     public int getRespawnTimeSeconds() {
         return config.getInt("game.respawn-time-seconds", 3);
-    }
-    
-    // Kits
-    public java.util.Map<String, Kit> getKits() {
-        java.util.Map<String, Kit> kits = new HashMap<>();
-        ConfigurationSection kitsSection = config.getConfigurationSection("kits");
-        
-        if (kitsSection != null) {
-            for (String kitId : kitsSection.getKeys(false)) {
-                ConfigurationSection kitSection = kitsSection.getConfigurationSection(kitId);
-                if (kitSection != null) {
-                    String name = kitSection.getString("name", kitId);
-                    String description = kitSection.getString("description", "");
-                    List<ItemStack> items = new ArrayList<>();
-                    
-                    ConfigurationSection itemsSection = kitSection.getConfigurationSection("items");
-                    if (itemsSection != null) {
-                        for (String itemId : itemsSection.getKeys(false)) {
-                            ConfigurationSection itemSection = itemsSection.getConfigurationSection(itemId);
-                            if (itemSection != null) {
-                                Material material = Material.valueOf(itemSection.getString("material", "STONE"));
-                                int amount = itemSection.getInt("amount", 1);
-                                items.add(new ItemStack(material, amount));
-                            }
-                        }
-                    }
-                    
-                    kits.put(kitId, new Kit(kitId, name, description, items));
-                }
-            }
-        }
-        
-        return kits;
     }
     
     // Generators
@@ -211,7 +177,7 @@ public class ConfigManager {
                         }
                     }
                     
-                    maps.put(mapId, new Map(mapId, name, description, minPlayers, maxPlayers, teams, spawnPoints, bedLocations, generators));
+                    maps.put(mapId, new Map(mapId, name, minPlayers, maxPlayers));
                 }
             }
         }

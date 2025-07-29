@@ -26,7 +26,6 @@ public class Game {
     private final Set<UUID> players;
     private final Set<UUID> spectators;
     private final java.util.Map<UUID, String> playerTeams;
-    private final java.util.Map<UUID, Kit> playerKits;
     private final java.util.Map<UUID, Integer> respawnTasks;
     
     private BukkitTask countdownTask;
@@ -48,7 +47,6 @@ public class Game {
         this.players = ConcurrentHashMap.newKeySet();
         this.spectators = ConcurrentHashMap.newKeySet();
         this.playerTeams = new ConcurrentHashMap<>();
-        this.playerKits = new ConcurrentHashMap<>();
         this.respawnTasks = new ConcurrentHashMap<>();
         
         this.countdownSeconds = configManager.getCountdownSeconds();
@@ -109,20 +107,9 @@ public class Game {
             playerTeams.put(playerId, team);
             teamObj.addPlayer(playerId);
             
-            // Set kit
-            java.util.Map<String, Kit> kits = configManager.getKits();
-            Kit kit = kits.get(kitId);
-            if (kit != null) {
-                playerKits.put(playerId, kit);
-            }
-            
             // Teleport to spawn
             player.teleport(teamObj.getSpawnLocation());
-            
-            // Give kit items
-            if (kit != null) {
-                kit.giveItems(player);
-            }
+           
             
             // Check if we can start the game
             if (players.size() >= configManager.getMinPlayers()) {
@@ -137,7 +124,6 @@ public class Game {
         if (players.contains(playerId)) {
             players.remove(playerId);
             String teamName = playerTeams.remove(playerId);
-            playerKits.remove(playerId);
             
             if (teamName != null) {
                 Team team = teams.get(teamName);
@@ -320,7 +306,7 @@ public class Game {
                 }
                 
                 // Check if team is eliminated
-                if (team.getPlayerCount() == 0) {
+                if (team.getPlayers().isEmpty()) {
                     team.setEliminated(true);
                 }
             } else {
@@ -361,16 +347,11 @@ public class Game {
     public Set<UUID> getSpectators() { return new HashSet<>(spectators); }
     public java.util.Map<String, Team> getTeams() { return new HashMap<>(teams); }
     public java.util.Map<UUID, String> getPlayerTeams() { return new HashMap<>(playerTeams); }
-    public java.util.Map<UUID, Kit> getPlayerKits() { return new HashMap<>(playerKits); }
     public java.util.Map<String, Generator> getGenerators() { return new HashMap<>(generators); }
     
     public Team getPlayerTeam(UUID playerId) {
         String teamName = playerTeams.get(playerId);
         return teamName != null ? teams.get(teamName) : null;
-    }
-    
-    public Kit getPlayerKit(UUID playerId) {
-        return playerKits.get(playerId);
     }
     
     public boolean isPlayerInGame(UUID playerId) {

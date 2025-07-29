@@ -33,8 +33,6 @@ public class LobbyListener implements Listener {
                 handleMapSelectionClick(player, event.getSlot());
             } else if (title.contains("Select Team")) {
                 handleTeamSelectionClick(player, event.getSlot());
-            } else if (title.contains("Select Kit")) {
-                handleKitSelectionClick(player, event.getSlot());
             } else if (title.contains("Shop")) {
                 handleShopClick(player, event.getSlot());
             }
@@ -56,8 +54,8 @@ public class LobbyListener implements Listener {
     
     private void handleMapSelectionClick(Player player, int slot) {
         // Get available maps
-        java.util.Map<String, com.bedwars.game.Map> maps = plugin.getMapManager().getMaps();
-        String[] mapIds = maps.keySet().toArray(new String[0]);
+        java.util.Collection<com.bedwars.game.Map> maps = plugin.getMapManager().getMaps();
+        String[] mapIds = maps.stream().map(com.bedwars.game.Map::getId).toArray(String[]::new);
         
         if (slot < mapIds.length) {
             String selectedMap = mapIds[slot];
@@ -72,17 +70,6 @@ public class LobbyListener implements Listener {
         if (slot < teams.length) {
             String selectedTeam = teams[slot];
             plugin.getLobbyManager().setPlayerSelection(player.getUniqueId(), "team", selectedTeam);
-            plugin.getLobbyManager().openKitSelection(player);
-        }
-    }
-    
-    private void handleKitSelectionClick(Player player, int slot) {
-        java.util.Map<String, com.bedwars.game.Kit> kits = plugin.getConfigManager().getKits();
-        String[] kitIds = kits.keySet().toArray(new String[0]);
-        
-        if (slot < kitIds.length) {
-            String selectedKit = kitIds[slot];
-            plugin.getLobbyManager().setPlayerSelection(player.getUniqueId(), "kit", selectedKit);
             
             // Try to join game with complete selection
             if (plugin.getLobbyManager().joinGameWithSelection(player)) {
@@ -97,15 +84,15 @@ public class LobbyListener implements Listener {
         String[] categories = {"blocks", "weapons", "armor", "tools", "utilities"};
         
         if (slot == 10) {
-            plugin.getShopManager().openShopCategory(player, "blocks");
+            plugin.getShopManager().openShopMainMenu(player);
         } else if (slot == 12) {
-            plugin.getShopManager().openShopCategory(player, "weapons");
+            plugin.getShopManager().openShopMainMenu(player);
         } else if (slot == 14) {
-            plugin.getShopManager().openShopCategory(player, "armor");
+            plugin.getShopManager().openShopMainMenu(player);
         } else if (slot == 16) {
-            plugin.getShopManager().openShopCategory(player, "tools");
+            plugin.getShopManager().openShopMainMenu(player);
         } else if (slot == 28) {
-            plugin.getShopManager().openShopCategory(player, "utilities");
+            plugin.getShopManager().openShopMainMenu(player);
         }
     }
 } 

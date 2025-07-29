@@ -80,7 +80,7 @@ public class GameManager {
         return null;
     }
     
-    public boolean joinGame(Player player, String mapId, String team, String kitId) {
+    public boolean joinGame(Player player, String mapId, String team) {
         // Check if player is already in a game
         if (getPlayerGame(player.getUniqueId()) != null) {
             return false;
@@ -96,7 +96,7 @@ public class GameManager {
         }
         
         // Add player to game
-        game.addPlayer(player, team, kitId);
+        game.addPlayer(player, team, null); // Pass null for kitId
         playerGames.put(player.getUniqueId(), game.getId());
         
         return true;

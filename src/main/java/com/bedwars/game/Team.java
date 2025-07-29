@@ -1,102 +1,64 @@
 package com.bedwars.game;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 public class Team {
-    
-    private final String name;
     private final String color;
-    private final Material bedMaterial;
-    private final Location spawnLocation;
-    private final Location bedLocation;
-    private final Set<UUID> players;
-    private boolean bedDestroyed;
-    private boolean eliminated;
-    
-    public Team(String name, String color, Material bedMaterial, Location spawnLocation, Location bedLocation) {
-        this.name = name;
+    private Location spawn;
+    private Location bed;
+    private final Set<UUID> players = new HashSet<>();
+    private boolean eliminated = false;
+    private boolean bedDestroyed = false;
+
+    public Team(String color, Location spawn, Location bed) {
         this.color = color;
-        this.bedMaterial = bedMaterial;
-        this.spawnLocation = spawnLocation;
-        this.bedLocation = bedLocation;
-        this.players = new HashSet<>();
-        this.bedDestroyed = false;
-        this.eliminated = false;
+        this.spawn = spawn;
+        this.bed = bed;
     }
-    
-    public String getName() {
-        return name;
-    }
-    
-    public String getColor() {
-        return color;
-    }
-    
-    public Material getBedMaterial() {
-        return bedMaterial;
-    }
-    
-    public Location getSpawnLocation() {
-        return spawnLocation;
-    }
-    
-    public Location getBedLocation() {
-        return bedLocation;
-    }
-    
+
+    public String getColor() { return color; }
+    public Location getSpawn() { return spawn; }
+    public void setSpawn(Location spawn) { this.spawn = spawn; }
+    public Location getBed() { return bed; }
+    public void setBed(Location bed) { this.bed = bed; }
+
     public Set<UUID> getPlayers() {
-        return new HashSet<>(players);
+        return players;
     }
-    
+
     public void addPlayer(UUID playerId) {
         players.add(playerId);
     }
-    
+
     public void removePlayer(UUID playerId) {
         players.remove(playerId);
     }
-    
-    public boolean hasPlayer(UUID playerId) {
-        return players.contains(playerId);
+
+    public Location getSpawnLocation() {
+        return spawn;
     }
-    
-    public int getPlayerCount() {
-        return players.size();
+
+    public Location getBedLocation() {
+        return bed;
     }
-    
-    public boolean isBedDestroyed() {
-        return bedDestroyed;
-    }
-    
-    public void setBedDestroyed(boolean bedDestroyed) {
-        this.bedDestroyed = bedDestroyed;
-    }
-    
-    public boolean isEliminated() {
-        return eliminated;
-    }
-    
+
     public void setEliminated(boolean eliminated) {
         this.eliminated = eliminated;
     }
-    
-    public boolean isAlive() {
-        return !eliminated && !bedDestroyed;
+
+    public boolean isEliminated() {
+        return eliminated;
     }
-    
-    public void clearPlayers() {
-        players.clear();
+
+    public boolean isBedDestroyed() {
+        return bedDestroyed;
     }
-    
-    public void reset() {
-        bedDestroyed = false;
-        eliminated = false;
-        players.clear();
+
+    public void setBedDestroyed(boolean bedDestroyed) {
+        this.bedDestroyed = bedDestroyed;
     }
 } 

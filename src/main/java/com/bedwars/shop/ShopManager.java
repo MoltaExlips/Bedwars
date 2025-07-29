@@ -1,108 +1,208 @@
 package com.bedwars.shop;
 
 import com.bedwars.BedwarsPlugin;
-import com.bedwars.game.Game;
-import com.bedwars.utils.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class ShopManager {
+public class ShopManager implements Listener {
     
     private final BedwarsPlugin plugin;
-    private final ConfigManager configManager;
+    // You can use a UUID or custom tag to identify your shopkeeper(s)
+    private final Set<UUID> shopkeeperUUIDs = new HashSet<>();
     
     public ShopManager(BedwarsPlugin plugin) {
         this.plugin = plugin;
-        this.configManager = plugin.getConfigManager();
     }
-    
-    public void openShopCategory(Player player, String category) {
-        Inventory inv = Bukkit.createInventory(null, 54, "§8[§cBedwars§8] " + category.substring(0, 1).toUpperCase() + category.substring(1));
-        
-        Map<String, ConfigManager.ShopItem> shopItems = configManager.getShopItems();
-        int slot = 0;
-        
-        for (Map.Entry<String, ConfigManager.ShopItem> entry : shopItems.entrySet()) {
-            String itemId = entry.getKey();
-            ConfigManager.ShopItem item = entry.getValue();
-            
-            // Check if item belongs to this category
-            if (itemId.startsWith(category + "_")) {
-                ItemStack displayItem = new ItemStack(item.getMaterial(), item.getAmount());
-                ItemMeta meta = displayItem.getItemMeta();
-                meta.setDisplayName("§6" + itemId.replace("_", " ").toUpperCase());
-                
-                List<String> lore = new ArrayList<>();
-                lore.add("§7Cost: §e" + item.getCost() + " " + item.getCurrency().name().replace("_", " "));
-                lore.add("§7Click to purchase");
-                meta.setLore(lore);
-                
-                displayItem.setItemMeta(meta);
-                inv.setItem(slot, displayItem);
-                slot++;
-            }
+
+    // Call this when you spawn your shopkeeper(s)
+    public void registerShopkeeper(Villager villager) {
+        shopkeeperUUIDs.add(villager.getUniqueId());
+    }
+
+    // 1. Open main shop menu on right-click
+    @EventHandler
+    public void onShopkeeperRightClick(PlayerInteractEntityEvent event) {
+        if (event.getRightClicked() instanceof Villager &&
+            shopkeeperUUIDs.contains(event.getRightClicked().getUniqueId())) {
+            event.setCancelled(true);
+            openShopMainMenu((Player) event.getPlayer());
         }
-        
+    }
+
+    // 2. Main shop menu with categories
+    public void openShopMainMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27, "§8[§cBedwars§8] Shop");
+
+        inv.setItem(10, createMenuItem(Material.BRICKS, "§aBlocks", "§7Buy building blocks"));
+        inv.setItem(12, createMenuItem(Material.IRON_SWORD, "§bSwords & Armor", "§7Buy weapons and armor"));
+        inv.setItem(14, createMenuItem(Material.WOODEN_PICKAXE, "§6Tools", "§7Buy tools"));
+        inv.setItem(16, createMenuItem(Material.TNT, "§dMisc", "§7Buy miscellaneous items"));
+
+        player.openInventory(inv);
+    }
+
+    // 3. Category GUIs
+    private void openBlocksMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27, "§8[§cBedwars§8] Blocks");
+
+        inv.setItem(10, createShopItem(Material.WHITE_WOOL, 16, "§fWool x16", "§78 Iron", Material.IRON_INGOT, 8));
+        inv.setItem(12, createShopItem(Material.SANDSTONE, 12, "§eSandstone x12", "§78 Iron", Material.IRON_INGOT, 8));
+        inv.setItem(14, createShopItem(Material.END_STONE, 24, "§6Endstone x24", "§78 Iron", Material.IRON_INGOT, 8));
+        inv.setItem(26, createMenuItem(Material.BARRIER, "§cBack", "§7Return to main shop"));
+
+        player.openInventory(inv);
+    }
+
+    private void openToolsMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27, "§8[§cBedwars§8] Tools");
+
+        inv.setItem(10, createEnchantedShopItem(Material.WOODEN_PICKAXE, 1, "§fWooden Pickaxe", "§730 Iron", Material.IRON_INGOT, 30));
+        inv.setItem(12, createEnchantedShopItem(Material.WOODEN_AXE, 1, "§fWooden Axe", "§730 Iron", Material.IRON_INGOT, 30));
+        inv.setItem(26, createMenuItem(Material.BARRIER, "§cBack", "§7Return to main shop"));
+
+        player.openInventory(inv);
+    }
+
+    private void openSwordsArmorMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27, "§8[§cBedwars§8] Swords & Armor");
+        // Add your swords and armor here
+        inv.setItem(26, createMenuItem(Material.BARRIER, "§cBack", "§7Return to main shop"));
+        player.openInventory(inv);
+    }
+
+    private void openMiscMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27, "§8[§cBedwars§8] Misc");
+        // Add your misc items here
+        inv.setItem(26, createMenuItem(Material.BARRIER, "§cBack", "§7Return to main shop"));
         player.openInventory(inv);
     }
     
-    public boolean purchaseItem(Player player, String itemId) {
-        Game game = plugin.getGameManager().getPlayerGame(player.getUniqueId());
-        if (game == null || game.getState() != com.bedwars.game.GameState.PLAYING) {
-            return false;
+    // 4. Handle GUI clicks and purchases
+    @EventHandler
+    public void onShopGUIClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        String title = event.getView().getTitle();
+
+        // Only handle our shop GUIs
+        if (!title.contains("Bedwars")) return;
+
+        event.setCancelled(true); // Prevent taking items
+
+        ItemStack clicked = event.getCurrentItem();
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+
+        // Main menu navigation
+        if (title.contains("Shop")) {
+            switch (clicked.getType()) {
+                case BRICKS: openBlocksMenu(player); break;
+                case IRON_SWORD: openSwordsArmorMenu(player); break;
+                case WOODEN_PICKAXE: openToolsMenu(player); break;
+                case TNT: openMiscMenu(player); break;
+            }
+            return;
         }
-        
-        Map<String, ConfigManager.ShopItem> shopItems = configManager.getShopItems();
-        ConfigManager.ShopItem item = shopItems.get(itemId);
-        
-        if (item == null) {
-            return false;
+
+        // Back button
+        if (clicked.getType() == Material.BARRIER) {
+            openShopMainMenu(player);
+            return;
         }
-        
-        // Check if player has enough currency
-        if (!hasEnoughCurrency(player, item.getCurrency(), item.getCost())) {
-            player.sendMessage(configManager.getMessage("shop.insufficient-funds"));
-            return false;
+
+        // Blocks shop
+        if (title.contains("Blocks")) {
+            if (clicked.getType() == Material.WHITE_WOOL) {
+                buyItem(player, Material.IRON_INGOT, 8, new ItemStack(Material.WHITE_WOOL, 16), "Wool x16");
+            } else if (clicked.getType() == Material.SANDSTONE) {
+                buyItem(player, Material.IRON_INGOT, 8, new ItemStack(Material.SANDSTONE, 12), "Sandstone x12");
+            } else if (clicked.getType() == Material.END_STONE) {
+                buyItem(player, Material.IRON_INGOT, 8, new ItemStack(Material.END_STONE, 24), "Endstone x24");
+            }
+            return;
         }
-        
-        // Remove currency from player
-        removeCurrency(player, item.getCurrency(), item.getCost());
-        
-        // Give item to player
-        ItemStack purchasedItem = new ItemStack(item.getMaterial(), item.getAmount());
-        player.getInventory().addItem(purchasedItem);
-        
-        // Send confirmation message
-        Map<String, String> placeholders = new HashMap<>();
-        placeholders.put("item", itemId.replace("_", " "));
-        placeholders.put("cost", item.getCost() + " " + item.getCurrency().name().replace("_", " "));
-        player.sendMessage(configManager.getMessage("shop.purchased", placeholders));
-        
-        return true;
+
+        // Tools shop
+        if (title.contains("Tools")) {
+            if (clicked.getType() == Material.WOODEN_PICKAXE) {
+                ItemStack pick = new ItemStack(Material.WOODEN_PICKAXE, 1);
+                pick.addUnsafeEnchantment(org.bukkit.enchantments.Enchantment.DIG_SPEED, 1);
+                buyItem(player, Material.IRON_INGOT, 30, pick, "Wooden Pickaxe (Efficiency I)");
+            } else if (clicked.getType() == Material.WOODEN_AXE) {
+                ItemStack axe = new ItemStack(Material.WOODEN_AXE, 1);
+                axe.addUnsafeEnchantment(org.bukkit.enchantments.Enchantment.DIG_SPEED, 1);
+                buyItem(player, Material.IRON_INGOT, 30, axe, "Wooden Axe (Efficiency I)");
+            }
+            return;
+        }
+
+        // Swords & Armor and Misc can be filled similarly
     }
-    
-    private boolean hasEnoughCurrency(Player player, Material currency, int amount) {
+
+    // 5. Purchase logic
+    private void buyItem(Player player, Material currency, int cost, ItemStack item, String name) {
+        int playerCurrency = getPlayerCurrency(player, currency);
+        if (playerCurrency < cost) {
+            player.sendMessage("§cYou don't have enough " + currency.name().replace("_", " ").toLowerCase() + "!");
+            return;
+        }
+        removeCurrency(player, currency, cost);
+        player.getInventory().addItem(item);
+        player.sendMessage("§aPurchased: " + name + " for " + cost + " " + currency.name().replace("_", " ").toLowerCase());
+    }
+
+    // 6. Utility methods
+    private ItemStack createMenuItem(Material mat, String name, String... lore) {
+        ItemStack item = new ItemStack(mat);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(name);
+        meta.setLore(Arrays.asList(lore));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createShopItem(Material mat, int amount, String name, String price, Material currency, int cost) {
+        ItemStack item = new ItemStack(mat, amount);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(name);
+        meta.setLore(Arrays.asList(price, "§7Click to buy"));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createEnchantedShopItem(Material mat, int amount, String name, String price, Material currency, int cost) {
+        ItemStack item = new ItemStack(mat, amount);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(name);
+        meta.setLore(Arrays.asList(price, "§7Click to buy"));
+        item.setItemMeta(meta);
+        item.addUnsafeEnchantment(org.bukkit.enchantments.Enchantment.DIG_SPEED, 1);
+        return item;
+    }
+
+    private int getPlayerCurrency(Player player, Material currency) {
         int count = 0;
         for (ItemStack item : player.getInventory().getContents()) {
             if (item != null && item.getType() == currency) {
                 count += item.getAmount();
             }
         }
-        return count >= amount;
+        return count;
     }
     
     private void removeCurrency(Player player, Material currency, int amount) {
         int remaining = amount;
-        
         for (int i = 0; i < player.getInventory().getSize() && remaining > 0; i++) {
             ItemStack item = player.getInventory().getItem(i);
             if (item != null && item.getType() == currency) {
@@ -115,28 +215,5 @@ public class ShopManager {
                 }
             }
         }
-    }
-    
-    public int getPlayerCurrency(Player player, Material currency) {
-        int count = 0;
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.getType() == currency) {
-                count += item.getAmount();
-            }
-        }
-        return count;
-    }
-    
-    public void displayPlayerCurrency(Player player) {
-        int iron = getPlayerCurrency(player, Material.IRON_INGOT);
-        int gold = getPlayerCurrency(player, Material.GOLD_INGOT);
-        int diamond = getPlayerCurrency(player, Material.DIAMOND);
-        int emerald = getPlayerCurrency(player, Material.EMERALD);
-        
-        player.sendMessage("§8[§cBedwars§8] §7Your currency:");
-        player.sendMessage("§7Iron: §f" + iron);
-        player.sendMessage("§7Gold: §6" + gold);
-        player.sendMessage("§7Diamond: §b" + diamond);
-        player.sendMessage("§7Emerald: §a" + emerald);
     }
 } 

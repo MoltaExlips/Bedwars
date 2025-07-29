@@ -1,112 +1,100 @@
 package com.bedwars.game;
 
 import com.bedwars.BedwarsPlugin;
-import com.bedwars.utils.ConfigManager;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
+import org.bukkit.configuration.file.YamlConfiguration;
 
-import java.util.HashMap;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class MapManager {
-    
     private final BedwarsPlugin plugin;
-    private final ConfigManager configManager;
-    private final java.util.Map<String, Map> maps;
-    
+    private final java.util.Map<String, com.bedwars.game.Map> maps = new java.util.HashMap<>();
+    private final File mapsFile;
+    private YamlConfiguration mapsConfig;
+
     public MapManager(BedwarsPlugin plugin) {
         this.plugin = plugin;
-        this.configManager = plugin.getConfigManager();
-        this.maps = new HashMap<>();
+        this.mapsFile = new File(plugin.getDataFolder(), "maps.yml");
+        loadMaps();
     }
-    
+
     public void loadMaps() {
-        java.util.Map<String, Map> configMaps = configManager.getMaps();
-        
-        for (java.util.Map.Entry<String, Map> entry : configMaps.entrySet()) {
-            String mapId = entry.getKey();
-            Map map = entry.getValue();
-            
-            // Create world for the map
-            World world = createWorldForMap(mapId);
-            if (world != null) {
-                map.setWorld(world);
-                maps.put(mapId, map);
-                plugin.getLogger().info("Loaded map: " + mapId);
-            }
-        }
-    }
-    
-    private World createWorldForMap(String mapId) {
-        String worldName = "bedwars_" + mapId;
-        
-        // Check if world already exists
-        World existingWorld = Bukkit.getWorld(worldName);
-        if (existingWorld != null) {
-            return existingWorld;
-        }
-        
-        // Create new world
-        WorldCreator creator = new WorldCreator(worldName);
-        creator.type(org.bukkit.WorldType.FLAT);
-        creator.generateStructures(false);
-        creator.generatorSettings("minecraft:bedrock,2*minecraft:stone,minecraft:grass_block");
-        
-        World world = creator.createWorld();
-        if (world != null) {
-            // Set world properties
-            world.setTime(0);
-            world.setStorm(false);
-            world.setThundering(false);
-            world.setGameRuleValue("doDaylightCycle", "false");
-            world.setGameRuleValue("doMobSpawning", "false");
-            world.setGameRuleValue("doWeatherCycle", "false");
-            world.setGameRuleValue("keepInventory", "false");
-            world.setGameRuleValue("naturalRegeneration", "false");
-            
-            return world;
-        }
-        
-        return null;
-    }
-    
-    public Map getMap(String mapId) {
-        return maps.get(mapId);
-    }
-    
-    public java.util.Map<String, Map> getMaps() {
-        return new HashMap<>(maps);
-    }
-    
-    public Map getAvailableMap(String mapId) {
-        Map map = maps.get(mapId);
-        if (map != null && !map.isActive()) {
-            return map;
-        }
-        return null;
-    }
-    
-    public void setMapActive(String mapId, boolean active) {
-        Map map = maps.get(mapId);
-        if (map != null) {
-            map.setActive(active);
-        }
-    }
-    
-    public void resetMap(String mapId) {
-        Map map = maps.get(mapId);
-        if (map != null) {
-            map.resetWorld();
-            map.setActive(false);
-        }
-    }
-    
-    public void unloadMaps() {
-        for (Map map : maps.values()) {
-            if (map.getWorld() != null) {
-                Bukkit.unloadWorld(map.getWorld(), false);
-            }
-        }
         maps.clear();
+        if (!mapsFile.exists()) {
+            plugin.saveResource("maps.yml", false);
+        }
+        mapsConfig = YamlConfiguration.loadConfiguration(mapsFile);
+
+        if (mapsConfig.contains("maps")) {
+            for (String id : mapsConfig.getConfigurationSection("maps").getKeys(false)) {
+                String path = "maps." + id + ".";
+                String name = mapsConfig.getString(path + "name");
+                int minPlayers = mapsConfig.getInt(path + "minPlayers");
+                int maxPlayers = mapsConfig.getInt(path + "maxPlayers");
+                com.bedwars.game.Map map = new com.bedwars.game.Map(id, name, minPlayers, maxPlayers);
+
+                // Shopkeeper
+                if (mapsConfig.contains(path + "shopkeeper")) {
+                    map.setShopkeeperLocation(deserializeLocation(mapsConfig.getString(path + "shopkeeper")));
+                }
+
+                // Teams
+                if (mapsConfig.contains(path + "teams")) {
+                    for (String color : mapsConfig.getConfigurationSection(path + "teams").getKeys(false)) {
+                        String tPath = path + "teams." + color + ".";
+                        Location spawn = deserializeLocation(mapsConfig.getString(tPath + "spawn"));
+                        Location bed = deserializeLocation(mapsConfig.getString(tPath + "bed"));
+                        map.addTeam(new Team(color, spawn, bed));
+                    }
+                }
+                maps.put(id, map);
+            }
+        }
+    }
+
+    public void saveMaps() {
+        for (com.bedwars.game.Map map : maps.values()) {
+            String path = "maps." + map.getId() + ".";
+            mapsConfig.set(path + "name", map.getName());
+            mapsConfig.set(path + "minPlayers", map.getMinPlayers());
+            mapsConfig.set(path + "maxPlayers", map.getMaxPlayers());
+            if (map.getShopkeeperLocation() != null)
+                mapsConfig.set(path + "shopkeeper", serializeLocation(map.getShopkeeperLocation()));
+            for (Team team : map.getTeams()) {
+                String tPath = path + "teams." + team.getColor() + ".";
+                if (team.getSpawn() != null)
+                    mapsConfig.set(tPath + "spawn", serializeLocation(team.getSpawn()));
+                if (team.getBed() != null)
+                    mapsConfig.set(tPath + "bed", serializeLocation(team.getBed()));
+            }
+        }
+        try {
+            mapsConfig.save(mapsFile);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save maps.yml: " + e.getMessage());
+        }
+    }
+
+    public com.bedwars.game.Map getMap(String id) { return maps.get(id); }
+    public Collection<com.bedwars.game.Map> getMaps() { return maps.values(); }
+    public void addMap(com.bedwars.game.Map map) { maps.put(map.getId(), map); saveMaps(); }
+
+    // Location serialization helpers
+    private String serializeLocation(Location loc) {
+        return loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+    }
+    private Location deserializeLocation(String s) {
+        if (s == null) return null;
+        String[] parts = s.split(",");
+        if (parts.length != 4) return null;
+        World world = Bukkit.getWorld(parts[0]);
+        int x = Integer.parseInt(parts[1]);
+        int y = Integer.parseInt(parts[2]);
+        int z = Integer.parseInt(parts[3]);
+        return new Location(world, x, y, z);
     }
 } 

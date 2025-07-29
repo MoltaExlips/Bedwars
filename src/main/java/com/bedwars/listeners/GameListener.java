@@ -101,7 +101,7 @@ public class GameListener implements Listener {
                 Block block = event.getClickedBlock();
                 if (block != null && block.getType() == Material.CHEST) {
                     // Open shop
-                    plugin.getShopManager().openShopCategory(player, "blocks");
+                    plugin.getShopManager().openShopMainMenu(player);
                     event.setCancelled(true);
                 }
             }

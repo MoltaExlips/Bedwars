@@ -61,14 +61,13 @@ public class BedwarsCommand implements CommandExecutor {
     }
     
     private void handleJoin(Player player, String[] args) {
-        if (args.length < 4) {
-            player.sendMessage("§cUsage: /bedwars join <map> <team> <kit>");
+        if (args.length < 3) {
+            player.sendMessage("§cUsage: /bedwars join <map> <team>");
             return;
         }
         
         String mapId = args[1];
         String team = args[2];
-        String kitId = args[3];
         
         // Check if map exists
         if (plugin.getMapManager().getMap(mapId) == null) {
@@ -84,7 +83,7 @@ public class BedwarsCommand implements CommandExecutor {
         }
         
         // Join the game
-        boolean success = plugin.getGameManager().joinGame(player, mapId, team, kitId);
+        boolean success = plugin.getGameManager().joinGame(player, mapId, team);
         if (success) {
             player.sendMessage(configManager.getMessage("lobby.joined"));
         } else {

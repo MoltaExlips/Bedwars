@@ -11,6 +11,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.HashMap;
 import java.util.UUID;
+import com.bedwars.game.Map;
+import java.util.List;
 
 public class LobbyManager {
     
@@ -18,14 +20,12 @@ public class LobbyManager {
     private final ConfigManager configManager;
     private final java.util.Map<UUID, String> playerSelectedMap;
     private final java.util.Map<UUID, String> playerSelectedTeam;
-    private final java.util.Map<UUID, String> playerSelectedKit;
     
     public LobbyManager(BedwarsPlugin plugin) {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
         this.playerSelectedMap = new HashMap<>();
         this.playerSelectedTeam = new HashMap<>();
-        this.playerSelectedKit = new HashMap<>();
     }
     
     public void openMainMenu(Player player) {
@@ -54,17 +54,16 @@ public class LobbyManager {
         Inventory inv = Bukkit.createInventory(null, 36, "§8[§cBedwars§8] Select Map");
         
         int slot = 0;
-        for (java.util.Map.Entry<String, com.bedwars.game.Map> entry : plugin.getMapManager().getMaps().entrySet()) {
-            String mapId = entry.getKey();
-            com.bedwars.game.Map map = entry.getValue();
+        for (Map mapObj : plugin.getMapManager().getMaps()) {
+            String id = mapObj.getId();
             
             ItemStack mapItem = new ItemStack(Material.MAP);
             ItemMeta mapMeta = mapItem.getItemMeta();
-            mapMeta.setDisplayName("§6" + map.getName());
+            mapMeta.setDisplayName("§6" + mapObj.getName());
             mapMeta.setLore(java.util.Arrays.asList(
-                "§7" + map.getDescription(),
-                "§7Players: §e" + map.getMinPlayers() + "§7-§e" + map.getMaxPlayers(),
-                "§7Teams: §e" + map.getTeams(),
+                "§7" + mapObj.getDescription(),
+                "§7Players: §e" + mapObj.getMinPlayers() + "§7-§e" + mapObj.getMaxPlayers(),
+                "§7Teams: §e" + mapObj.getTeams(),
                 "§7Click to select this map"
             ));
             mapItem.setItemMeta(mapMeta);
@@ -83,13 +82,16 @@ public class LobbyManager {
         if (selectedMap != null) {
             com.bedwars.game.Map map = plugin.getMapManager().getMap(selectedMap);
             if (map != null) {
-                String[] teams = {"red", "blue", "green", "yellow"};
+                List<String> teamList = map.getTeams().stream()
+                    .map(Team::getColor)
+                    .collect(java.util.stream.Collectors.toList());
                 Material[] teamMaterials = {Material.RED_WOOL, Material.BLUE_WOOL, Material.LIME_WOOL, Material.YELLOW_WOOL};
-                
-                for (int i = 0; i < map.getTeams(); i++) {
+
+                for (int i = 0; i < teamList.size() && i < teamMaterials.length; i++) {
+                    String teamName = teamList.get(i);
                     ItemStack teamItem = new ItemStack(teamMaterials[i]);
                     ItemMeta teamMeta = teamItem.getItemMeta();
-                    teamMeta.setDisplayName("§" + getTeamColor(teams[i]) + teams[i].toUpperCase());
+                    teamMeta.setDisplayName("§" + getTeamColor(teamName) + teamName.toUpperCase());
                     teamMeta.setLore(java.util.Arrays.asList("§7Click to join this team"));
                     teamItem.setItemMeta(teamMeta);
                     
@@ -100,31 +102,7 @@ public class LobbyManager {
         
         player.openInventory(inv);
     }
-    
-    public void openKitSelection(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, "§8[§cBedwars§8] Select Kit");
-        
-        int slot = 0;
-        for (java.util.Map.Entry<String, Kit> entry : configManager.getKits().entrySet()) {
-            String kitId = entry.getKey();
-            Kit kit = entry.getValue();
-            
-            ItemStack kitItem = new ItemStack(Material.CHEST);
-            ItemMeta kitMeta = kitItem.getItemMeta();
-            kitMeta.setDisplayName("§6" + kit.getName());
-            kitMeta.setLore(java.util.Arrays.asList(
-                "§7" + kit.getDescription(),
-                "§7Click to select this kit"
-            ));
-            kitItem.setItemMeta(kitMeta);
-            
-            inv.setItem(slot, kitItem);
-            slot++;
-        }
-        
-        player.openInventory(inv);
-    }
-    
+
     public void openShop(Player player) {
         Inventory inv = Bukkit.createInventory(null, 54, "§8[§cBedwars§8] Shop");
         
@@ -189,9 +167,6 @@ public class LobbyManager {
             case "team":
                 playerSelectedTeam.put(playerId, value);
                 break;
-            case "kit":
-                playerSelectedKit.put(playerId, value);
-                break;
         }
     }
     
@@ -201,24 +176,19 @@ public class LobbyManager {
                 return playerSelectedMap.get(playerId);
             case "team":
                 return playerSelectedTeam.get(playerId);
-            case "kit":
-                return playerSelectedKit.get(playerId);
-            default:
-                return null;
         }
+        return null;
     }
     
     public void clearPlayerSelection(UUID playerId) {
         playerSelectedMap.remove(playerId);
         playerSelectedTeam.remove(playerId);
-        playerSelectedKit.remove(playerId);
     }
     
     public boolean hasCompleteSelection(Player player) {
         UUID playerId = player.getUniqueId();
         return playerSelectedMap.containsKey(playerId) &&
-               playerSelectedTeam.containsKey(playerId) &&
-               playerSelectedKit.containsKey(playerId);
+               playerSelectedTeam.containsKey(playerId);
     }
     
     public boolean joinGameWithSelection(Player player) {
@@ -229,9 +199,8 @@ public class LobbyManager {
         UUID playerId = player.getUniqueId();
         String mapId = playerSelectedMap.get(playerId);
         String team = playerSelectedTeam.get(playerId);
-        String kitId = playerSelectedKit.get(playerId);
         
-        boolean success = plugin.getGameManager().joinGame(player, mapId, team, kitId);
+        boolean success = plugin.getGameManager().joinGame(player, mapId, team);
         if (success) {
             clearPlayerSelection(playerId);
         }

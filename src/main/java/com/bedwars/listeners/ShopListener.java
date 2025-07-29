@@ -33,7 +33,6 @@ public class ShopListener implements Listener {
                 if (itemName != null && !itemName.contains("Click to")) {
                     // Extract item ID from display name
                     String itemId = itemName.replace("§6", "").replace(" ", "_").toLowerCase();
-                    plugin.getShopManager().purchaseItem(player, itemId);
                 }
             }
         }

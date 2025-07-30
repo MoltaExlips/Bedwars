@@ -95,19 +95,75 @@ public class MapSetupManager {
     }
     
     private void startSetupTutorial(Player player, MapSetupSession session) {
-        player.sendMessage("§8[§cBedwars§8] §6Map Setup Tutorial Started!");
-        player.sendMessage("§7Step 1: Set the map region (Pos1 and Pos2)");
-        player.sendMessage("§7Use §e/mapsetup pos1 §7and §e/mapsetup pos2 §7to set the corners");
-        player.sendMessage("§7This defines the area that will be reset between games");
+        sendProgressUpdate(player, session);
         
-        // Give the player a setup wand
-        ItemStack wand = new ItemStack(Material.WOODEN_AXE);
+        // Give the player a setup wand with dynamic lore
+        giveSetupWand(player, session);
+        
+        // Open the main setup GUI to guide the process
+        openSetupProgressGUI(player, session);
+    }
+    
+    private void sendProgressUpdate(Player player, MapSetupSession session) {
+        player.sendMessage("§8[§cBedwars§8] §6Map Setup Progress");
+        player.sendMessage("§7Map: §e" + session.getMapName() + " §8(§7" + session.getProgressPercentage() + "%§8)");
+        player.sendMessage("§7Current Step: §a" + session.getCurrentStep().getDisplayName());
+        player.sendMessage("§7" + session.getCurrentStep().getDescription());
+        player.sendMessage("§8▶ §e" + session.getNextStepHint());
+        player.sendMessage("§8" + "=".repeat(40));
+    }
+    
+    private void giveSetupWand(Player player, MapSetupSession session) {
+        ItemStack wand = new ItemStack(Material.GOLDEN_AXE);
         ItemMeta meta = wand.getItemMeta();
-        meta.setDisplayName("§6Map Setup Wand");
-        meta.setLore(Arrays.asList("§7Right-click to set positions", "§7Left-click to set team spawns"));
+        meta.setDisplayName("§6✦ Map Setup Wand ✦");
+        
+        List<String> lore = new ArrayList<>();
+        lore.add("§8" + "▬".repeat(25));
+        lore.add("§7Current Step: §a" + session.getCurrentStep().getDisplayName());
+        lore.add("§8");
+        
+        switch (session.getCurrentStep()) {
+            case REGION_SETUP:
+                lore.add("§e§l» §7Right-click: §aSet Position 1");
+                lore.add("§e§l» §7Left-click: §aSet Position 2");
+                lore.add("§8");
+                lore.add("§7Define the map boundaries that will");
+                lore.add("§7be reset between games");
+                break;
+            case TEAM_SETUP:
+                if (session.getCurrentTeam() != null) {
+                    lore.add("§e§l» §7Right-click: §aSet " + session.getCurrentTeam() + " spawn");
+                    lore.add("§e§l» §7Place bed: §aSet " + session.getCurrentTeam() + " bed");
+                    lore.add("§7  §8(or left-click with wand)");
+                    lore.add("§8");
+                    lore.add("§7Setting up: §" + getTeamColorCode(session.getCurrentTeam()) + session.getCurrentTeam().toUpperCase() + " TEAM");
+                } else {
+                    lore.add("§c§l» §7Open team menu to select a team first");
+                    lore.add("§7Use: §e/mapsetup teams");
+                }
+                break;
+            default:
+                lore.add("§7Use §e/mapsetup teams §7to configure teams");
+                lore.add("§7Use §e/mapsetup settings §7for map settings");
+                break;
+        }
+        
+        lore.add("§8" + "▬".repeat(25));
+        meta.setLore(lore);
         wand.setItemMeta(meta);
         
-        player.getInventory().addItem(wand);
+        // Clear inventory first and give wand
+        player.getInventory().clear();
+        player.getInventory().setItem(0, wand);
+        
+        // Give navigation items
+        ItemStack menuItem = new ItemStack(Material.COMPASS);
+        ItemMeta menuMeta = menuItem.getItemMeta();
+        menuMeta.setDisplayName("§6Setup Menu");
+        menuMeta.setLore(Arrays.asList("§7Right-click to open setup progress"));
+        menuItem.setItemMeta(menuMeta);
+        player.getInventory().setItem(8, menuItem);
     }
     
     public void setPos1(Player player) {
@@ -118,11 +174,24 @@ public class MapSetupManager {
         }
         
         session.setPos1(player.getLocation());
-        player.sendMessage("§aPosition 1 set at: " + formatLocation(player.getLocation()));
+        player.sendMessage("§a✓ Position 1 set at: " + formatLocation(player.getLocation()));
         
-        if (session.getPos2() != null) {
-            player.sendMessage("§7Step 2: Set up teams and spawns");
-            openTeamSetupMenu(player);
+        // Update wand and provide next step guidance
+        giveSetupWand(player, session);
+        
+        if (session.isRegionComplete()) {
+            player.sendMessage("§a§l✓ Region setup complete!");
+            sendProgressUpdate(player, session);
+            
+            // Auto-advance to team setup after a brief delay
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    openTeamSetupMenu(player);
+                }
+            }.runTaskLater(plugin, 40L); // 2 second delay
+        } else {
+            player.sendMessage("§7Next: " + session.getNextStepHint());
         }
     }
     
@@ -134,19 +203,103 @@ public class MapSetupManager {
         }
         
         session.setPos2(player.getLocation());
-        player.sendMessage("§aPosition 2 set at: " + formatLocation(player.getLocation()));
+        player.sendMessage("§a✓ Position 2 set at: " + formatLocation(player.getLocation()));
         
-        if (session.getPos1() != null) {
-            player.sendMessage("§7Step 2: Set up teams and spawns");
-            openTeamSetupMenu(player);
+        // Update wand and provide next step guidance
+        giveSetupWand(player, session);
+        
+        if (session.isRegionComplete()) {
+            player.sendMessage("§a§l✓ Region setup complete!");
+            sendProgressUpdate(player, session);
+            
+            // Auto-advance to team setup after a brief delay
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    openTeamSetupMenu(player);
+                }
+            }.runTaskLater(plugin, 40L); // 2 second delay
+        } else {
+            player.sendMessage("§7Next: " + session.getNextStepHint());
         }
+    }
+    
+    public void openSetupProgressGUI(Player player, MapSetupSession session) {
+        Inventory inv = Bukkit.createInventory(null, 27, "§8[§cBedwars§8] Setup Progress");
+        
+        // Progress indicator
+        int progress = session.getProgressPercentage();
+        ItemStack progressItem = createMenuItem(Material.EXPERIENCE_BOTTLE, 
+            "§6Setup Progress: " + progress + "%",
+            "§7Current Step: §a" + session.getCurrentStep().getDisplayName(),
+            "§8" + session.getCurrentStep().getDescription(),
+            "§8",
+            "§e" + session.getNextStepHint());
+        inv.setItem(4, progressItem);
+        
+        // Step indicators
+        MapSetupSession.SetupStep[] steps = MapSetupSession.SetupStep.values();
+        for (int i = 0; i < steps.length; i++) {
+            MapSetupSession.SetupStep step = steps[i];
+            boolean isComplete = false;
+            boolean isCurrent = session.getCurrentStep() == step;
+            
+            // Check completion status
+            switch (step) {
+                case REGION_SETUP:
+                    isComplete = session.isRegionComplete();
+                    break;
+                case TEAM_SETUP:
+                    isComplete = session.areTeamsComplete();
+                    break;
+                case MAP_SETTINGS:
+                    isComplete = session.getMapName() != null && !session.getMapName().isEmpty();
+                    break;
+                case READY_TO_SAVE:
+                    isComplete = session.isComplete();
+                    break;
+            }
+            
+            Material material = isComplete ? Material.EMERALD : (isCurrent ? Material.GOLD_INGOT : Material.GRAY_DYE);
+            String status = isComplete ? "§a✓ Complete" : (isCurrent ? "§e▶ Current" : "§7○ Pending");
+            
+            ItemStack stepItem = createMenuItem(material, 
+                status + " §f" + step.getDisplayName(),
+                "§8" + step.getDescription());
+            inv.setItem(9 + i * 2, stepItem);
+        }
+        
+        // Quick action buttons
+        ItemStack teamButton = createMenuItem(Material.IRON_SWORD, "§6Configure Teams", 
+            "§7Set up team spawns and beds", "§7Click to open team menu");
+        inv.setItem(18, teamButton);
+        
+        ItemStack settingsButton = createMenuItem(Material.NAME_TAG, "§6Map Settings", 
+            "§7Configure map name and limits", "§7Click to open settings");
+        inv.setItem(20, settingsButton);
+        
+        if (session.isComplete()) {
+            ItemStack saveButton = createMenuItem(Material.EMERALD_BLOCK, "§a§lSave Map", 
+                "§7Finish setup and save the map", "§7Click to save");
+            inv.setItem(22, saveButton);
+        }
+        
+        player.openInventory(inv);
     }
     
     public void openTeamSetupMenu(Player player) {
         MapSetupSession session = getSession(player);
         if (session == null) return;
         
-        Inventory inv = Bukkit.createInventory(null, 36, "§8[§cBedwars§8] Team Setup");
+        Inventory inv = Bukkit.createInventory(null, 45, "§8[§cBedwars§8] Team Setup");
+        
+        // Progress indicator at top
+        int progress = session.getProgressPercentage();
+        ItemStack progressItem = createMenuItem(Material.EXPERIENCE_BOTTLE, 
+            "§6Setup Progress: " + progress + "%",
+            "§7Step: §a" + session.getCurrentStep().getDisplayName(),
+            "§e" + session.getNextStepHint());
+        inv.setItem(4, progressItem);
         
         // Team colors
         String[] colors = {"red", "blue", "green", "yellow"};
@@ -155,32 +308,61 @@ public class MapSetupManager {
         for (int i = 0; i < colors.length; i++) {
             String color = colors[i];
             boolean hasTeam = session.hasTeam(color);
+            boolean isSelected = color.equals(session.getCurrentTeam());
             
-            ItemStack item = new ItemStack(hasTeam ? Material.EMERALD : materials[i]);
+            Material itemMaterial = hasTeam ? Material.EMERALD_BLOCK : 
+                                   (isSelected ? Material.GOLD_BLOCK : materials[i]);
+            
+            ItemStack item = new ItemStack(itemMaterial);
             ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName("§" + getTeamColorCode(color) + color.toUpperCase() + " TEAM");
+            
+            String prefix = hasTeam ? "§a✓ " : (isSelected ? "§e▶ " : "§7○ ");
+            meta.setDisplayName(prefix + "§" + getTeamColorCode(color) + color.toUpperCase() + " TEAM");
             
             List<String> lore = new ArrayList<>();
             if (hasTeam) {
-                lore.add("§a✓ Team configured");
+                lore.add("§a§l✓ FULLY CONFIGURED");
+                lore.add("§8");
                 lore.add("§7Spawn: " + formatLocation(session.getTeamSpawn(color)));
                 lore.add("§7Bed: " + formatLocation(session.getTeamBed(color)));
-                lore.add("§7Shopkeeper: " + formatLocation(session.getTeamShopkeeper(color)));
+                if (session.getTeamShopkeeper(color) != null) {
+                    lore.add("§7Shopkeeper: " + formatLocation(session.getTeamShopkeeper(color)));
+                }
+                lore.add("§8");
+                lore.add("§7Click to reconfigure this team");
+            } else if (isSelected) {
+                lore.add("§e§l▶ CURRENTLY SELECTED");
+                lore.add("§8");
+                lore.add("§7Use your wand to set:");
+                lore.add("§a• Right-click: Set spawn point");
+                lore.add("§a• Left-click: Set bed location");
+                lore.add("§7Use §e/mapsetup shopkeeper §7for shopkeeper");
             } else {
-                lore.add("§c✗ Not configured");
-                lore.add("§7Click to set up this team");
+                lore.add("§c§l✗ NOT CONFIGURED");
+                lore.add("§8");
+                lore.add("§7Click to select and configure");
             }
             meta.setLore(lore);
             item.setItemMeta(meta);
             
-            inv.setItem(i, item);
+            inv.setItem(19 + i * 2, item);
         }
         
+        // Navigation buttons
+        ItemStack backButton = createMenuItem(Material.ARROW, "§7« Back to Progress", 
+            "§7Return to main setup screen");
+        inv.setItem(36, backButton);
+        
         // Continue button
-        if (session.getTeamCount() > 0) {
-            ItemStack continueItem = createMenuItem(Material.EMERALD_BLOCK, "§aContinue to Map Settings", 
-                "§7Configure map name, min/max players", "§7Click to continue");
-            inv.setItem(31, continueItem);
+        if (session.areTeamsComplete()) {
+            ItemStack continueItem = createMenuItem(Material.EMERALD_BLOCK, "§a§lContinue to Settings »", 
+                "§7Configure map name and player limits", "§7Click to continue");
+            inv.setItem(44, continueItem);
+        } else {
+            ItemStack hintItem = createMenuItem(Material.BARRIER, "§c§lNeed More Teams", 
+                "§7Set up at least 2 teams to continue",
+                "§7Teams configured: " + session.getTeamCount() + "/4");
+            inv.setItem(44, hintItem);
         }
         
         player.openInventory(inv);
@@ -191,32 +373,98 @@ public class MapSetupManager {
         if (session == null) return;
         
         session.setCurrentTeam(teamColor);
-        player.sendMessage("§7Setting up §" + getTeamColorCode(teamColor) + teamColor + " §7team");
-        player.sendMessage("§7Right-click where you want the spawn point");
-        player.sendMessage("§7Left-click where you want the bed");
-        player.sendMessage("§7Use §e/mapsetup shopkeeper §7to set shopkeeper location");
+        player.closeInventory();
+        
+        player.sendMessage("§8[§cBedwars§8] §6Team Setup");
+        player.sendMessage("§7Selected: §" + getTeamColorCode(teamColor) + teamColor.toUpperCase() + " TEAM");
+        player.sendMessage("§8");
+        player.sendMessage("§a§l» §7Right-click with wand: Set spawn point");
+        player.sendMessage("§a§l» §7Place a bed: Set bed location §8(easier!)");
+        player.sendMessage("§7  §8Alternative: Left-click with wand");
+        player.sendMessage("§a§l» §7Use §e/mapsetup shopkeeper §7to set shopkeeper");
+        player.sendMessage("§8" + "=".repeat(40));
+        
+        // Update the wand to reflect current team
+        giveSetupWand(player, session);
     }
     
     public void setTeamSpawn(Player player) {
         MapSetupSession session = getSession(player);
         if (session == null || session.getCurrentTeam() == null) {
-            player.sendMessage("§cYou need to select a team first!");
+            player.sendMessage("§cYou need to select a team first! Use §e/mapsetup teams");
             return;
         }
         
-        session.setTeamSpawn(session.getCurrentTeam(), player.getLocation());
-        player.sendMessage("§a" + session.getCurrentTeam() + " team spawn set!");
+        String team = session.getCurrentTeam();
+        session.setTeamSpawn(team, player.getLocation());
+        player.sendMessage("§a✓ " + team.toUpperCase() + " team spawn set at: " + formatLocation(player.getLocation()));
+        
+        // Check if team is now complete
+        if (session.hasTeam(team)) {
+            player.sendMessage("§a§l✓ " + team.toUpperCase() + " team fully configured!");
+            
+            // If we have enough teams, suggest moving to next step
+            if (session.areTeamsComplete()) {
+                player.sendMessage("§7Tip: You have enough teams! Use §e/mapsetup settings §7to continue");
+            }
+        } else {
+            player.sendMessage("§7Next: Set the bed location with left-click");
+        }
+        
+        // Update wand
+        giveSetupWand(player, session);
     }
     
     public void setTeamBed(Player player) {
         MapSetupSession session = getSession(player);
         if (session == null || session.getCurrentTeam() == null) {
-            player.sendMessage("§cYou need to select a team first!");
+            player.sendMessage("§cYou need to select a team first! Use §e/mapsetup teams");
             return;
         }
         
-        session.setTeamBed(session.getCurrentTeam(), player.getLocation());
-        player.sendMessage("§a" + session.getCurrentTeam() + " team bed set!");
+        String team = session.getCurrentTeam();
+        session.setTeamBed(team, player.getLocation());
+        player.sendMessage("§a✓ " + team.toUpperCase() + " team bed set at: " + formatLocation(player.getLocation()));
+        
+        // Check if team is now complete
+        if (session.hasTeam(team)) {
+            player.sendMessage("§a§l✓ " + team.toUpperCase() + " team fully configured!");
+            
+            // If we have enough teams, suggest moving to next step
+            if (session.areTeamsComplete()) {
+                player.sendMessage("§7Tip: You have enough teams! Use §e/mapsetup settings §7to continue");
+            }
+        } else {
+            player.sendMessage("§7Next: Set the spawn point with right-click");
+        }
+        
+        // Update wand
+        giveSetupWand(player, session);
+    }
+    
+    public void setTeamBedFromBlock(Player player, Location bedLocation) {
+        MapSetupSession session = getSession(player);
+        if (session == null || session.getCurrentTeam() == null) {
+            return;
+        }
+        
+        String team = session.getCurrentTeam();
+        session.setTeamBed(team, bedLocation);
+        
+        // Check if team is now complete
+        if (session.hasTeam(team)) {
+            player.sendMessage("§a§l✓ " + team.toUpperCase() + " team fully configured!");
+            
+            // If we have enough teams, suggest moving to next step
+            if (session.areTeamsComplete()) {
+                player.sendMessage("§7Tip: You have enough teams! Use §e/mapsetup settings §7to continue");
+            }
+        } else {
+            player.sendMessage("§7Next: Set the spawn point with right-click on your wand");
+        }
+        
+        // Update wand to reflect progress
+        giveSetupWand(player, session);
     }
     
     public void setTeamShopkeeper(Player player) {

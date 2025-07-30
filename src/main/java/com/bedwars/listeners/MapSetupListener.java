@@ -7,10 +7,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -77,7 +79,7 @@ public class MapSetupListener implements Listener {
         if (displayName.contains("Map Setup Wand")) {
             event.setCancelled(true);
             
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
                 // Check if a team is currently selected
                 MapSetupSession session = setupManager.getSession(player);
                 if (session != null && session.getCurrentTeam() != null) {
@@ -87,7 +89,7 @@ public class MapSetupListener implements Listener {
                     // Set Pos1 for map region
                     setupManager.setPos1(player);
                 }
-            } else if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            } else if (event.getAction() == Action.LEFT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_AIR) {
                 // Check if a team is currently selected
                 MapSetupSession session = setupManager.getSession(player);
                 if (session != null && session.getCurrentTeam() != null) {
@@ -96,6 +98,24 @@ public class MapSetupListener implements Listener {
                 } else {
                     // Set Pos2 for map region
                     setupManager.setPos2(player);
+                }
+            }
+        }
+        
+        // Check if player is using the compass (setup menu)
+        if (displayName.contains("Setup Menu")) {
+            event.setCancelled(true);
+            
+            if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                MapSetupSession session = setupManager.getSession(player);
+                if (session != null) {
+                    // Open the setup progress GUI
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            setupManager.openSetupProgressGUI(player, session);
+                        }
+                    }.runTask(plugin);
                 }
             }
         }
@@ -111,7 +131,7 @@ public class MapSetupListener implements Listener {
         String title = event.getView().getTitle();
         
         // Only handle our setup GUIs
-        if (!(title.contains("Map Setup") || title.contains("Team Setup") || title.contains("Map Settings"))) {
+        if (!(title.contains("Map Setup") || title.contains("Team Setup") || title.contains("Map Settings") || title.contains("Setup Progress"))) {
             return;
         }
         
@@ -122,8 +142,14 @@ public class MapSetupListener implements Listener {
             return;
         }
         
+        // Setup progress menu
+        if (title.contains("Setup Progress")) {
+            handleSetupProgressClick(player, clicked);
+            return;
+        }
+        
         // Main setup menu
-        if (title.contains("Map Setup")) {
+        if (title.contains("Map Setup") && !title.contains("Team Setup") && !title.contains("Setup Progress")) {
             handleMainMenuClick(player, clicked);
             return;
         }
@@ -142,9 +168,45 @@ public class MapSetupListener implements Listener {
     }
     
     @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        MapSetupSession session = setupManager.getSession(player);
+        
+        // Only handle bed placement for players in map setup
+        if (session == null) {
+            return;
+        }
+        
+        Material blockType = event.getBlock().getType();
+        
+        // Check if it's a bed block
+        if (isBedBlock(blockType)) {
+            // Check if player has a team selected
+            if (session.getCurrentTeam() == null) {
+                event.setCancelled(true);
+                player.sendMessage("§cPlease select a team first! Use §e/mapsetup teams §cor right-click your compass.");
+                return;
+            }
+            
+            // Set the bed location for the current team
+            String team = session.getCurrentTeam();
+            setupManager.setTeamBedFromBlock(player, event.getBlock().getLocation());
+            
+            player.sendMessage("§a✓ " + team.toUpperCase() + " team bed placed and configured!");
+            
+            // Don't cancel the event - let the bed be placed normally
+        }
+    }
+    
+    @EventHandler
     public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
         Player player = event.getPlayer();
         setupManager.cancelMapSetup(player);
+    }
+    
+    private boolean isBedBlock(Material material) {
+        // Check for all bed types (different colors)
+        return material.name().contains("BED") && !material.name().contains("BEDROCK");
     }
     
     private void handleMainMenuClick(Player player, ItemStack clicked) {
@@ -164,8 +226,36 @@ public class MapSetupListener implements Listener {
         }
     }
     
+    private void handleSetupProgressClick(Player player, ItemStack clicked) {
+        switch (clicked.getType()) {
+            case IRON_SWORD:
+                // Configure Teams button
+                setupManager.openTeamSetupMenu(player);
+                break;
+            case NAME_TAG:
+                // Map Settings button
+                setupManager.openMapSettingsMenu(player);
+                break;
+            case EMERALD_BLOCK:
+                // Save Map button
+                setupManager.saveMap(player);
+                break;
+        }
+    }
+    
     private void handleTeamSetupClick(Player player, ItemStack clicked) {
         String displayName = ChatColor.stripColor(clicked.getItemMeta().getDisplayName()).toUpperCase();
+        
+        // Navigation buttons
+        if (clicked.getType() == Material.ARROW) {
+            // Back to progress
+            MapSetupSession session = setupManager.getSession(player);
+            if (session != null) {
+                setupManager.openSetupProgressGUI(player, session);
+            }
+            return;
+        }
+        
         // Check for team colors
         if (displayName.contains("RED TEAM")) {
             setupManager.setupTeam(player, "red");
@@ -175,7 +265,7 @@ public class MapSetupListener implements Listener {
             setupManager.setupTeam(player, "green");
         } else if (displayName.contains("YELLOW TEAM")) {
             setupManager.setupTeam(player, "yellow");
-        } else if (clicked.getType() == Material.EMERALD_BLOCK) {
+        } else if (clicked.getType() == Material.EMERALD_BLOCK && displayName.contains("CONTINUE")) {
             // Continue to map settings
             setupManager.openMapSettingsMenu(player);
         }

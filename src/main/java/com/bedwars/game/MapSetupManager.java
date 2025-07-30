@@ -134,7 +134,8 @@ public class MapSetupManager {
             case TEAM_SETUP:
                 if (session.getCurrentTeam() != null) {
                     lore.add("§e§l» §7Right-click: §aSet " + session.getCurrentTeam() + " spawn");
-                    lore.add("§e§l» §7Left-click: §aSet " + session.getCurrentTeam() + " bed");
+                    lore.add("§e§l» §7Place bed: §aSet " + session.getCurrentTeam() + " bed");
+                    lore.add("§7  §8(or left-click with wand)");
                     lore.add("§8");
                     lore.add("§7Setting up: §" + getTeamColorCode(session.getCurrentTeam()) + session.getCurrentTeam().toUpperCase() + " TEAM");
                 } else {
@@ -378,7 +379,8 @@ public class MapSetupManager {
         player.sendMessage("§7Selected: §" + getTeamColorCode(teamColor) + teamColor.toUpperCase() + " TEAM");
         player.sendMessage("§8");
         player.sendMessage("§a§l» §7Right-click with wand: Set spawn point");
-        player.sendMessage("§a§l» §7Left-click with wand: Set bed location");
+        player.sendMessage("§a§l» §7Place a bed: Set bed location §8(easier!)");
+        player.sendMessage("§7  §8Alternative: Left-click with wand");
         player.sendMessage("§a§l» §7Use §e/mapsetup shopkeeper §7to set shopkeeper");
         player.sendMessage("§8" + "=".repeat(40));
         
@@ -437,6 +439,31 @@ public class MapSetupManager {
         }
         
         // Update wand
+        giveSetupWand(player, session);
+    }
+    
+    public void setTeamBedFromBlock(Player player, Location bedLocation) {
+        MapSetupSession session = getSession(player);
+        if (session == null || session.getCurrentTeam() == null) {
+            return;
+        }
+        
+        String team = session.getCurrentTeam();
+        session.setTeamBed(team, bedLocation);
+        
+        // Check if team is now complete
+        if (session.hasTeam(team)) {
+            player.sendMessage("§a§l✓ " + team.toUpperCase() + " team fully configured!");
+            
+            // If we have enough teams, suggest moving to next step
+            if (session.areTeamsComplete()) {
+                player.sendMessage("§7Tip: You have enough teams! Use §e/mapsetup settings §7to continue");
+            }
+        } else {
+            player.sendMessage("§7Next: Set the spawn point with right-click on your wand");
+        }
+        
+        // Update wand to reflect progress
         giveSetupWand(player, session);
     }
     

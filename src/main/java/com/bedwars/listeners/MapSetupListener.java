@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
@@ -167,9 +168,45 @@ public class MapSetupListener implements Listener {
     }
     
     @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        MapSetupSession session = setupManager.getSession(player);
+        
+        // Only handle bed placement for players in map setup
+        if (session == null) {
+            return;
+        }
+        
+        Material blockType = event.getBlock().getType();
+        
+        // Check if it's a bed block
+        if (isBedBlock(blockType)) {
+            // Check if player has a team selected
+            if (session.getCurrentTeam() == null) {
+                event.setCancelled(true);
+                player.sendMessage("§cPlease select a team first! Use §e/mapsetup teams §cor right-click your compass.");
+                return;
+            }
+            
+            // Set the bed location for the current team
+            String team = session.getCurrentTeam();
+            setupManager.setTeamBedFromBlock(player, event.getBlock().getLocation());
+            
+            player.sendMessage("§a✓ " + team.toUpperCase() + " team bed placed and configured!");
+            
+            // Don't cancel the event - let the bed be placed normally
+        }
+    }
+    
+    @EventHandler
     public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
         Player player = event.getPlayer();
         setupManager.cancelMapSetup(player);
+    }
+    
+    private boolean isBedBlock(Material material) {
+        // Check for all bed types (different colors)
+        return material.name().contains("BED") && !material.name().contains("BEDROCK");
     }
     
     private void handleMainMenuClick(Player player, ItemStack clicked) {

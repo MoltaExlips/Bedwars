@@ -64,13 +64,13 @@ public class Game {
         String[] teamColors = {"red", "blue", "green", "yellow"};
         Material[] bedMaterials = {Material.RED_BED, Material.BLUE_BED, Material.GREEN_BED, Material.YELLOW_BED};
         
-        for (int i = 0; i < map.getTeams(); i++) {
+        for (int i = 0; i < map.getTeams().size(); i++) {
             String color = teamColors[i];
             Location spawnLoc = map.getSpawnPoint(color);
             Location bedLoc = map.getBedLocation(color);
             
             if (spawnLoc != null && bedLoc != null) {
-                Team team = new Team(color, color, bedMaterials[i], spawnLoc, bedLoc);
+                Team team = new Team(color, spawnLoc, bedLoc);
                 teams.put(color, team);
             }
         }
@@ -332,7 +332,7 @@ public class Game {
     public List<Team> getAliveTeams() {
         List<Team> aliveTeams = new ArrayList<>();
         for (Team team : teams.values()) {
-            if (team.isAlive()) {
+            if (!team.isEliminated() && !team.isBedDestroyed()) {
                 aliveTeams.add(team);
             }
         }

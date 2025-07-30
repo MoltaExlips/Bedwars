@@ -38,6 +38,18 @@ public class Team {
         players.remove(playerId);
     }
 
+    public boolean hasPlayer(UUID playerId) {
+        return players.contains(playerId);
+    }
+
+    public String getName() {
+        return color;
+    }
+
+    public int getPlayerCount() {
+        return players.size();
+    }
+
     public Location getSpawnLocation() {
         return spawn;
     }

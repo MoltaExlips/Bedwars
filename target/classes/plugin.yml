@@ -16,6 +16,12 @@ commands:
     usage: /bedwarsadmin [create|delete|reload|setup]
     aliases: [bwa]
     permission: bedwars.admin
+    
+  mapsetup:
+    description: Interactive map creation and editing
+    usage: /mapsetup [create|edit|list|delete] [mapId]
+    aliases: [ms]
+    permission: bedwars.admin
 
 permissions:
   bedwars.admin:

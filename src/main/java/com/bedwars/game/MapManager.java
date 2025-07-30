@@ -48,7 +48,15 @@ public class MapManager {
                         String tPath = path + "teams." + color + ".";
                         Location spawn = deserializeLocation(mapsConfig.getString(tPath + "spawn"));
                         Location bed = deserializeLocation(mapsConfig.getString(tPath + "bed"));
-                        map.addTeam(new Team(color, spawn, bed));
+                        
+                        if (spawn != null && bed != null) {
+                            Team team = new Team(color, spawn, bed);
+                            map.addTeam(team);
+                            
+                            // Also store in Map's separate storage for easy access
+                            map.setSpawnPoint(color, spawn);
+                            map.setBedLocation(color, bed);
+                        }
                     }
                 }
                 maps.put(id, map);
@@ -64,12 +72,29 @@ public class MapManager {
             mapsConfig.set(path + "maxPlayers", map.getMaxPlayers());
             if (map.getShopkeeperLocation() != null)
                 mapsConfig.set(path + "shopkeeper", serializeLocation(map.getShopkeeperLocation()));
+            
+            // Save teams with their spawn points and bed locations
             for (Team team : map.getTeams()) {
                 String tPath = path + "teams." + team.getColor() + ".";
                 if (team.getSpawn() != null)
                     mapsConfig.set(tPath + "spawn", serializeLocation(team.getSpawn()));
                 if (team.getBed() != null)
                     mapsConfig.set(tPath + "bed", serializeLocation(team.getBed()));
+            }
+            
+            // Also save spawn points and bed locations from the Map's separate storage
+            for (String teamColor : new String[]{"red", "blue", "green", "yellow"}) {
+                Location spawn = map.getSpawnPoint(teamColor);
+                Location bed = map.getBedLocation(teamColor);
+                
+                if (spawn != null) {
+                    String tPath = path + "teams." + teamColor + ".";
+                    mapsConfig.set(tPath + "spawn", serializeLocation(spawn));
+                }
+                if (bed != null) {
+                    String tPath = path + "teams." + teamColor + ".";
+                    mapsConfig.set(tPath + "bed", serializeLocation(bed));
+                }
             }
         }
         try {
@@ -82,6 +107,18 @@ public class MapManager {
     public com.bedwars.game.Map getMap(String id) { return maps.get(id); }
     public Collection<com.bedwars.game.Map> getMaps() { return maps.values(); }
     public void addMap(com.bedwars.game.Map map) { maps.put(map.getId(), map); saveMaps(); }
+    
+    public void resetMap(String mapId) {
+        maps.remove(mapId);
+        if (mapsConfig.contains("maps." + mapId)) {
+            mapsConfig.set("maps." + mapId, null);
+            try {
+                mapsConfig.save(mapsFile);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to save maps.yml: " + e.getMessage());
+            }
+        }
+    }
 
     // Location serialization helpers
     private String serializeLocation(Location loc) {

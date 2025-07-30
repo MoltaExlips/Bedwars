@@ -216,4 +216,39 @@ public class ShopManager implements Listener {
             }
         }
     }
+    
+    public void openShopCategory(Player player, String category) {
+        switch (category.toLowerCase()) {
+            case "blocks":
+                openBlocksMenu(player);
+                break;
+            case "weapons":
+            case "swords":
+                openSwordsArmorMenu(player);
+                break;
+            case "tools":
+                openToolsMenu(player);
+                break;
+            case "misc":
+            case "utilities":
+                openMiscMenu(player);
+                break;
+            default:
+                openShopMainMenu(player);
+                break;
+        }
+    }
+    
+    public void displayPlayerCurrency(Player player) {
+        int iron = getPlayerCurrency(player, Material.IRON_INGOT);
+        int gold = getPlayerCurrency(player, Material.GOLD_INGOT);
+        int emerald = getPlayerCurrency(player, Material.EMERALD);
+        int diamond = getPlayerCurrency(player, Material.DIAMOND);
+        
+        player.sendMessage("§8[§cBedwars§8] §6Your Currency:");
+        player.sendMessage("§7Iron: §f" + iron);
+        player.sendMessage("§7Gold: §6" + gold);
+        player.sendMessage("§7Emerald: §a" + emerald);
+        player.sendMessage("§7Diamond: §b" + diamond);
+    }
 } 

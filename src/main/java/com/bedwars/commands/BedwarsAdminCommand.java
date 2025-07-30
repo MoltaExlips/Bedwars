@@ -54,6 +54,13 @@ public class BedwarsAdminCommand implements CommandExecutor {
     }
     
     private void handleCreate(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            return;
+        }
+        
+        Player player = (Player) sender;
+        
         if (args.length < 2) {
             sender.sendMessage("§cUsage: /bedwarsadmin create <mapId>");
             return;
@@ -67,8 +74,8 @@ public class BedwarsAdminCommand implements CommandExecutor {
             return;
         }
         
-        // Create a new map (this would typically involve more complex setup)
-        sender.sendMessage("§aMap creation is not yet implemented. Please configure maps in config.yml");
+        // Use the new map setup system
+        plugin.getMapSetupManager().startMapCreation(player, mapId);
     }
     
     private void handleDelete(CommandSender sender, String[] args) {

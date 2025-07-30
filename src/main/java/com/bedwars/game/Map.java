@@ -14,6 +14,9 @@ public class Map {
     private World world;
     private boolean active;
     private String description;
+    private final java.util.Map<String, List<Location>> generators = new HashMap<>();
+    private final java.util.Map<String, Location> spawnPoints = new HashMap<>();
+    private final java.util.Map<String, Location> bedLocations = new HashMap<>();
 
     public Map(String id, String name, int minPlayers, int maxPlayers) {
         this.id = id;
@@ -44,5 +47,24 @@ public class Map {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public java.util.Map<String, List<Location>> getGenerators() { return generators; }
+    public void addGenerator(String type, Location location) {
+        generators.computeIfAbsent(type, k -> new ArrayList<>()).add(location);
+    }
+
+    public Location getSpawnPoint(String teamColor) { return spawnPoints.get(teamColor); }
+    public void setSpawnPoint(String teamColor, Location location) { spawnPoints.put(teamColor, location); }
+
+    public Location getBedLocation(String teamColor) { return bedLocations.get(teamColor); }
+    public void setBedLocation(String teamColor, Location location) { bedLocations.put(teamColor, location); }
+
+    public void resetWorld() {
+        // Implementation for resetting the world
+        if (world != null) {
+            // Reset logic here - this would reset the map to its original state
+            // For now, just a placeholder
+        }
     }
 } 
